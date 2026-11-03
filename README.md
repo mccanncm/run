@@ -30,6 +30,7 @@ If the runtime string is rejected, list the valid values with `az webapp list-ru
 
 | Setting (Azure name) | Purpose |
 |---|---|
+| `App__AdminKey` | A long random string you choose. Required to connect, refresh or read live Strava data |
 | `Strava__ClientId`, `Strava__ClientSecret`, `Strava__RedirectUri` | Strava API app, for a future live activity sync |
 | `Google__ClientId`, `Google__ClientSecret` | Google API (Sheets / Calendar) for direct export |
 | `Garmin__ConsumerKey`, `Garmin__ConsumerSecret` | Garmin Connect developer program, if you get access |
@@ -48,6 +49,18 @@ Locally, use user-secrets instead of editing files:
 dotnet user-secrets set "Strava:ClientSecret" "xxxx"
 ```
 Check what is configured at `GET /api/config/status` (returns true/false only, never the values).
+
+## Live Strava data
+The dashboard shows a built-in snapshot (May 1 to Oct 31, 2026) until you connect Strava. After that the Visual Analytics and baseline stats use your last 26 weeks of live data.
+
+1. Create a Strava API app at https://www.strava.com/settings/api. Set **Authorization Callback Domain** to your app's hostname only (for example `my-app.azurewebsites.net`, no `https://`). For local testing use `localhost`.
+2. In Azure App Settings, set `App__AdminKey` (a long random string), `Strava__ClientId` and `Strava__ClientSecret`. `Strava__RedirectUri` is optional; it defaults to `https://<your-host>/auth/strava/callback`.
+3. Open the dashboard, go to Visual Analytics, enter your admin key, and press **Connect Strava**. Approve access (keep "View data about your activities" checked).
+4. Back on the dashboard, press **Refresh from Strava** whenever you want fresh data. **Load live data** shows the last cached sync without calling Strava.
+
+How it works: the app stores your Strava tokens encrypted (ASP.NET Data Protection) in the persistent `/home/data` folder on App Service (`App_Data` locally), refreshes the access token automatically, and caches your activities. Refreshes are limited to one per minute (Strava allows 100 requests per 15 minutes). Endpoints: `GET /api/strava/status`, `GET /api/strava/activities`, `POST /api/strava/refresh`, `POST /api/strava/disconnect`, `GET /auth/strava/login`, `GET /auth/strava/callback`. All except `status` require the admin key.
+
+Strava's API terms limit showing one athlete's data to other people, so keep the live views behind the admin key (built in). For extra safety, turn on App Service Authentication (Settings > Authentication) so only you can open the site.
 
 ## Continuous deploy with GitHub Actions
 1. In the Azure portal, open your App Service and choose Download publish profile.

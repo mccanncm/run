@@ -159,7 +159,16 @@ footer{margin-top:40px;color:var(--mut);font-size:12px}
 
 <!-- 4. ANALYTICS -->
 <h2>Visual Analytics &middot; Last 6 Months</h2>
-<p class="sub">Strava data from May 1 to Oct 31, 2026 (runs, walks, rides and other activity).</p>
+<p class="sub" id="dsrc">Snapshot of Strava data from May 1 to Oct 31, 2026 (runs, walks, rides and other activity).</p>
+<div class="card" id="live" style="display:none;margin-bottom:14px">
+<div class="lbl">Live Strava data</div>
+<div id="liveMsg" class="dt" style="margin:6px 0 10px">Enter your admin key to load or refresh live data.</div>
+<div class="tabs" style="margin:0;align-items:center">
+<input id="adminKey" type="password" placeholder="Admin key" autocomplete="off" style="padding:9px 12px;border-radius:10px;border:1px solid var(--line);background:var(--card2);color:var(--tx);min-width:200px">
+<button class="tab" id="bLoad">Load live data</button>
+<button class="tab" id="bRefresh" style="border-color:var(--grn);color:var(--grn)">&#8635; Refresh from Strava</button>
+<button class="tab" id="bConnect">Connect Strava</button>
+</div></div>
 <div class="card"><div class="lbl">Activity heat map (each column is one week, Mon–Sun)</div><div class="hm" id="heat"></div>
 <div class="leg"><span><i style="background:#1b2535"></i>Rest</span><span><i style="background:#2f5d8c"></i>Walk / other only</span><span><i style="background:#1c6b54"></i>&lt;3 mi</span><span><i style="background:#25a37a"></i>3–5 mi</span><span><i style="background:#35d49a"></i>5–8 mi</span><span><i style="background:#c5ffe8"></i>8+ mi</span></div></div>
 <div class="grid g2" style="margin-top:14px">
@@ -178,33 +187,42 @@ footer{margin-top:40px;color:var(--mut);font-size:12px}
 
 <script>
 // ---- Strava data: [MMDD, type(R/W/O), miles, elev ft, minutes] ----
-const A=[["0502","R",5.01,39,57.5],["0503","R",10.01,233,112.2],["0506","R",4.89,56,47.5],["0507","W",1.74,30,40],["0509","R",4.51,52,49.2],["0510","R",12.01,197,121.6],["0514","R",4.32,66,42.2],["0516","R",4.51,43,47],["0517","W",2.58,117,94],["0517","R",8.55,364,88.3],["0517","R",.67,13,8.6],["0519","W",2.07,16,38],["0520","R",3.35,36,31.7],["0523","R",4.51,52,46.5],["0524","R",6.01,79,62.1],["0526","O",2.61,33,35],["0527","R",3.51,39,32.6],["0530","R",13.19,75,119.1],["0604","R",3.15,52,33.1],["0607","W",.63,33,24],["0611","R",3.28,33,34],["0613","R",3.81,36,39.7],["0616","R",4.31,59,46.3],["0618","R",5.03,62,52.1],["0618","O",2.4,79,58],["0620","W",.71,108,26],["0621","R",4.01,59,44],["0627","W",.7,10,21],["0628","W",1.96,82,49],["0629","W",1.59,20,38],["0702","R",3.65,39,36.1],["0705","R",5.73,85,60.9],["0711","R",4.17,43,40.1],["0712","R",1.77,46,20.1],["0714","R",2.89,23,30.2],["0716","R",5.18,56,50.1],["0718","O",3.38,66,42],["0719","R",4.32,98,45.1],["0721","R",4.03,56,40],["0723","R",4.29,56,44],["0724","R",3.07,26,32.1],["0725","R",2.07,39,24.1],["0725","W",1.58,68,51],["0726","R",6.4,98,65.1],["0801","R",3.51,46,43],["0802","R",1.03,20,11.1],["0802","R",5.83,669,65.3],["0802","W",.43,13,12],["0808","R",2.97,49,33],["0809","R",5.73,62,53.6],["0811","W",1.47,52,36],["0813","R",2.96,26,30.3],["0814","R",2.51,36,28.5],["0816","R",5.0,518,58.8],["0817","O",0,0,22],["0820","R",2.82,135,30.8],["0821","R",3.79,302,43.8],["0829","R",3.58,52,38.6],["0905","R",3.14,39,35.1],["0906","W",1.99,108,48],["0906","R",4.11,59,48.1],["0909","R",3.64,98,35.1],["0910","O",0,0,8],["0913","R",5.32,102,58.1],["0919","R",3.58,30,37.1],["0920","W",3.05,295,100],["0922","R",2.47,72,27.2],["0925","W",1.05,39,32],["0927","R",1.66,33,18.2],["1003","R",1.54,62,19.8],["1010","R",2.72,33,34.8],["1011","R",4.21,39,44.9],["1011","W",.79,33,16],["1013","R",2.64,23,29.1],["1015","R",2.7,46,30.7],["1017","R",2.17,33,23.1],["1019","R",5.71,59,58.8],["1025","R",4.38,226,48.6],["1027","R",4.3,56,42.1],["1029","R",.35,49,4.2],["1030","R",2.81,0,30.1]];
-const D=a=>new Date(2026,+a[0].slice(0,2)-1,+a[0].slice(2));
+let A=[["0502","R",5.01,39,57.5],["0503","R",10.01,233,112.2],["0506","R",4.89,56,47.5],["0507","W",1.74,30,40],["0509","R",4.51,52,49.2],["0510","R",12.01,197,121.6],["0514","R",4.32,66,42.2],["0516","R",4.51,43,47],["0517","W",2.58,117,94],["0517","R",8.55,364,88.3],["0517","R",.67,13,8.6],["0519","W",2.07,16,38],["0520","R",3.35,36,31.7],["0523","R",4.51,52,46.5],["0524","R",6.01,79,62.1],["0526","O",2.61,33,35],["0527","R",3.51,39,32.6],["0530","R",13.19,75,119.1],["0604","R",3.15,52,33.1],["0607","W",.63,33,24],["0611","R",3.28,33,34],["0613","R",3.81,36,39.7],["0616","R",4.31,59,46.3],["0618","R",5.03,62,52.1],["0618","O",2.4,79,58],["0620","W",.71,108,26],["0621","R",4.01,59,44],["0627","W",.7,10,21],["0628","W",1.96,82,49],["0629","W",1.59,20,38],["0702","R",3.65,39,36.1],["0705","R",5.73,85,60.9],["0711","R",4.17,43,40.1],["0712","R",1.77,46,20.1],["0714","R",2.89,23,30.2],["0716","R",5.18,56,50.1],["0718","O",3.38,66,42],["0719","R",4.32,98,45.1],["0721","R",4.03,56,40],["0723","R",4.29,56,44],["0724","R",3.07,26,32.1],["0725","R",2.07,39,24.1],["0725","W",1.58,68,51],["0726","R",6.4,98,65.1],["0801","R",3.51,46,43],["0802","R",1.03,20,11.1],["0802","R",5.83,669,65.3],["0802","W",.43,13,12],["0808","R",2.97,49,33],["0809","R",5.73,62,53.6],["0811","W",1.47,52,36],["0813","R",2.96,26,30.3],["0814","R",2.51,36,28.5],["0816","R",5.0,518,58.8],["0817","O",0,0,22],["0820","R",2.82,135,30.8],["0821","R",3.79,302,43.8],["0829","R",3.58,52,38.6],["0905","R",3.14,39,35.1],["0906","W",1.99,108,48],["0906","R",4.11,59,48.1],["0909","R",3.64,98,35.1],["0910","O",0,0,8],["0913","R",5.32,102,58.1],["0919","R",3.58,30,37.1],["0920","W",3.05,295,100],["0922","R",2.47,72,27.2],["0925","W",1.05,39,32],["0927","R",1.66,33,18.2],["1003","R",1.54,62,19.8],["1010","R",2.72,33,34.8],["1011","R",4.21,39,44.9],["1011","W",.79,33,16],["1013","R",2.64,23,29.1],["1015","R",2.7,46,30.7],["1017","R",2.17,33,23.1],["1019","R",5.71,59,58.8],["1025","R",4.38,226,48.6],["1027","R",4.3,56,42.1],["1029","R",.35,49,4.2],["1030","R",2.81,0,30.1]];
+A=A.map(a=>["2026-"+a[0].slice(0,2)+"-"+a[0].slice(2),a[1],a[2],a[3],a[4]]); // snapshot -> ISO dates
+const D=a=>{const p=a[0].split("-");return new Date(+p[0],+p[1]-1,+p[2])};
 const MON=["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
 const fmt=d=>MON[d.getMonth()]+" "+d.getDate();
-const W0=new Date(2026,3,27); // Monday Apr 27
-const wkIdx=d=>Math.floor((d-W0)/6048e5);
-const NW=27, runs=A.filter(a=>a[1]==="R");
-const wk=Array.from({length:NW},(_,i)=>({mi:0,el:0,n:0,s:new Date(2026,3,27+7*i)}));
-runs.forEach(a=>{const w=wk[wkIdx(D(a))];w.mi+=a[2];w.el+=a[3];w.n++});
+let RS,RE,W0,NW,runs,wk;
+const dayOnly=d=>new Date(d.getFullYear(),d.getMonth(),d.getDate());
+const startMon=d=>{const x=dayOnly(d);x.setDate(x.getDate()-((x.getDay()+6)%7));return x};
+const dayDiff=(a,b)=>Math.round((a-b)/864e5);
+function setRange(rs,re){
+ RS=dayOnly(rs);RE=dayOnly(re);W0=startMon(RS);NW=Math.floor(dayDiff(startMon(RE),W0)/7)+1;
+ runs=A.filter(a=>a[1]==="R");
+ wk=Array.from({length:NW},(_,i)=>({mi:0,el:0,n:0,s:new Date(W0.getFullYear(),W0.getMonth(),W0.getDate()+7*i)}));
+ runs.forEach(a=>{const w=wk[Math.floor(dayDiff(D(a),W0)/7)];if(w){w.mi+=a[2];w.el+=a[3];w.n++}});
+}
 const tip=document.getElementById("tip");
 function tp(e,t){tip.style.display="block";tip.innerHTML=t;tip.style.left=Math.min(e.clientX+12,innerWidth-250)+"px";tip.style.top=(e.clientY+12)+"px"}
 function th(){tip.style.display="none"}
 
 // ---- 1. stats ----
-const totMi=runs.reduce((s,a)=>s+a[2],0), totEl=runs.reduce((s,a)=>s+a[3],0);
-const avg6=totMi/(184/7);
-const recent=wk.filter(w=>w.s>=new Date(2026,8,7)); // 8 wks from Sep 7
-const avg8=recent.reduce((s,w)=>s+w.mi,0)/recent.length;
-const longest=Math.max(...runs.map(a=>a[2]));
-const rl=Math.max(...runs.filter(a=>D(a)>=new Date(2026,8,7)).map(a=>a[2]));
-const maxEl=runs.reduce((m,a)=>a[3]>m[3]?a:m,runs[0]);
 function card(l,v,u,cur,tgt,col,t1,t2){const p=Math.min(100,cur/tgt*100);return `<div class="card"><div class="lbl">${l}</div><div class="big">${v}<small> ${u}</small></div><div class="bar"><i style="width:${p}%;background:${col}"></i></div><div class="vs"><span>${t1}</span><span>${t2}</span></div></div>`}
-document.getElementById("stats").innerHTML=
+function renderStats(){
+ const totMi=runs.reduce((s,a)=>s+a[2],0), totEl=runs.reduce((s,a)=>s+a[3],0);
+ const avg6=totMi/((dayDiff(RE,RS)+1)/7);
+ const cm=startMon(RE),cut=new Date(cm.getFullYear(),cm.getMonth(),cm.getDate()-49); // last 8 weeks
+ const recent=wk.filter(w=>w.s>=cut);
+ const avg8=recent.length?recent.reduce((s,w)=>s+w.mi,0)/recent.length:0;
+ const longest=Math.max(0,...runs.map(a=>a[2]));
+ const rl=Math.max(0,...runs.filter(a=>D(a)>=cut).map(a=>a[2]));
+ const maxEl=runs.reduce((m,a)=>a[3]>m[3]?a:m,["","R",0,0,0]);
+ document.getElementById("stats").innerHTML=
  card("Avg weekly volume (last 8 wks)",avg8.toFixed(1),"mi/wk",avg8,35,"var(--blu)",`6-mo avg <b>${avg6.toFixed(1)}</b>`,"Peak target <b>34–35</b>")+
- card("Longest run, last 8 wks",rl.toFixed(1),"mi",rl,20,"var(--grn)",`6-mo best <b>${longest.toFixed(1)}</b> (half marathon)`,"Peak target <b>18–20</b>")+
- card("Biggest climbing run",Math.round(maxEl[3]).toLocaleString(),"ft",maxEl[3],1700,"var(--yel)",`in ${maxEl[2].toFixed(1)} mi (${Math.round(maxEl[3]/maxEl[2])} ft/mi)`,"Course <b>~1,700 ft</b>")+
+ card("Longest run, last 8 wks",rl.toFixed(1),"mi",rl,20,"var(--grn)",`6-mo best <b>${longest.toFixed(1)}</b>`,"Peak target <b>18–20</b>")+
+ card("Biggest climbing run",Math.round(maxEl[3]).toLocaleString(),"ft",maxEl[3],1700,"var(--yel)",`in ${maxEl[2].toFixed(1)} mi (${maxEl[2]?Math.round(maxEl[3]/maxEl[2]):0} ft/mi)`,"Course <b>~1,700 ft</b>")+
  card("6-month running total",totMi.toFixed(0),"mi",totMi,800,"var(--pur)",`${runs.length} runs &middot; ${Math.round(totEl).toLocaleString()} ft`,"Plan total <b>~850 mi</b>");
+}
 const race=new Date(2027,6,25), now=new Date();
 const dl=Math.ceil((race-now)/864e5);
 document.getElementById("cd").textContent=dl>0?dl+" days ("+(dl/7).toFixed(1)+" weeks) to race day":"Race day!";
@@ -343,7 +361,7 @@ document.getElementById("exCsv").onclick=()=>{
 };
 
 // ---- 4a. heat map ----
-(function(){
+function renderHeat(){
  const day={};
  A.forEach(a=>{const d=D(a),k=d.getTime();(day[k]=day[k]||{r:0,o:0,m:0,el:0}).m+=a[4];if(a[1]==="R")day[k].r+=a[2];else day[k].o++;day[k].el+=a[3]});
  const cs=13,g=3,L=26,w=L+NW*(cs+g),h=7*(cs+g)+20;
@@ -351,20 +369,20 @@ document.getElementById("exCsv").onclick=()=>{
  ["M","","W","","F","","S"].forEach((l,i)=>s+=`<text x="2" y="${20+i*(cs+g)+11}" font-size="10" fill="#8fa0b8">${l}</text>`);
  let lastM=-1;
  for(let c=0;c<NW;c++){
-  const ws=new Date(2026,3,27+7*c);
-  if(ws.getMonth()!==lastM&&ws.getDate()<=7){lastM=ws.getMonth();s+=`<text x="${L+c*(cs+g)}" y="11" font-size="10" fill="#8fa0b8">${MON[lastM]}</text>`}
+  const ws=new Date(W0.getFullYear(),W0.getMonth(),W0.getDate()+7*c);
+  if(ws.getMonth()!==lastM&&(ws.getDate()<=7||c===0)){lastM=ws.getMonth();s+=`<text x="${L+c*(cs+g)}" y="11" font-size="10" fill="#8fa0b8">${MON[lastM]}</text>`}
   for(let r=0;r<7;r++){
-   const d=new Date(2026,3,27+7*c+r);if(d<new Date(2026,4,1)||d>new Date(2026,9,31))continue;
+   const d=new Date(W0.getFullYear(),W0.getMonth(),W0.getDate()+7*c+r);if(d<RS||d>RE)continue;
    const v=day[d.getTime()];let col="#1b2535",t=fmt(d)+": rest";
    if(v){if(v.r>0){col=v.r>=8?"#c5ffe8":v.r>=5?"#35d49a":v.r>=3?"#25a37a":"#1c6b54";t=`${fmt(d)}: <b>${v.r.toFixed(1)} mi</b> run`+(v.o?" + other":"")+`<br>${Math.round(v.m)} min total, ${Math.round(v.el)} ft`}else{col="#2f5d8c";t=`${fmt(d)}: walk/other, ${Math.round(v.m)} min`}}
    s+=`<rect x="${L+c*(cs+g)}" y="${20+r*(cs+g)}" width="${cs}" height="${cs}" rx="3" fill="${col}" onmousemove="tp(event,'${t}')" onmouseleave="th()"/>`;
   }
  }
  document.getElementById("heat").innerHTML=s+"</svg>";
-})();
+}
 
 // ---- 4b. weekly miles + elevation ----
-(function(){
+function renderWeekly(){
  const W=620,H=250,m={l:34,r:40,t:12,b:34},iw=W-m.l-m.r,ih=H-m.t-m.b;
  const mx=Math.max(...wk.map(w=>w.mi),1)*1.1,ex=Math.max(...wk.map(w=>w.el),1)*1.1,bw=iw/NW;
  let s=`<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Weekly distance and elevation">`;
@@ -373,20 +391,59 @@ document.getElementById("exCsv").onclick=()=>{
  wk.forEach((w,i)=>{const bh=w.mi/mx*ih,x=m.l+i*bw;s+=`<rect x="${x+1.5}" y="${m.t+ih-bh}" width="${bw-3}" height="${bh}" rx="2" fill="#35d49a" onmousemove="tp(event,'Week of ${fmt(w.s)}<br><b>${w.mi.toFixed(1)} mi</b> &middot; ${Math.round(w.el)} ft &middot; ${w.n} runs')" onmouseleave="th()"/>`;pts.push(`${x+bw/2},${m.t+ih-w.el/ex*ih}`);if(i%4===0)s+=`<text x="${x+bw/2}" y="${H-16}" font-size="10" fill="#8fa0b8" text-anchor="middle">${fmt(w.s)}</text>`});
  s+=`<polyline points="${pts.join(" ")}" fill="none" stroke="#ffc857" stroke-width="2"/>`;
  document.getElementById("wk").innerHTML=s+"</svg>";
-})();
+}
 
 // ---- 4c. scatter: distance vs elevation ----
-(function(){
+function renderScatter(){
  const W=620,H=250,m={l:40,r:14,t:12,b:34},iw=W-m.l-m.r,ih=H-m.t-m.b;
- const rr=runs.filter(a=>a[2]>=1),xm=14,ym=720;
+ const rr=runs.filter(a=>a[2]>=1),xm=Math.max(14,Math.ceil(Math.max(0,...rr.map(a=>a[2]))/2)*2),ym=Math.max(720,Math.ceil(Math.max(0,...rr.map(a=>a[3]))/180)*180);
  const X=v=>m.l+v/xm*iw,Y=v=>m.t+ih-v/ym*ih;
  let s=`<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Elevation vs distance scatter">`;
  for(let v=0;v<=ym;v+=180)s+=`<line x1="${m.l}" x2="${W-m.r}" y1="${Y(v)}" y2="${Y(v)}" stroke="#243044"/><text x="${m.l-5}" y="${Y(v)+4}" font-size="10" fill="#8fa0b8" text-anchor="end">${v}</text>`;
- for(let v=0;v<=14;v+=2)s+=`<text x="${X(v)}" y="${H-16}" font-size="10" fill="#8fa0b8" text-anchor="middle">${v}</text>`;
+ for(let v=0;v<=xm;v+=2)s+=`<text x="${X(v)}" y="${H-16}" font-size="10" fill="#8fa0b8" text-anchor="middle">${v}</text>`;
  s+=`<text x="${m.l+iw/2}" y="${H-3}" font-size="10" fill="#8fa0b8" text-anchor="middle">distance (mi)</text><text x="10" y="${m.t+ih/2}" font-size="10" fill="#8fa0b8" transform="rotate(-90 10 ${m.t+ih/2})" text-anchor="middle">elevation gain (ft)</text>`;
- s+=`<line x1="${X(0)}" y1="${Y(0)}" x2="${X(11)}" y2="${Y(11*65)}" stroke="#ff6a3d" stroke-width="2" stroke-dasharray="5 4"/>`;
+ s+=`<line x1="${X(0)}" y1="${Y(0)}" x2="${X(Math.min(xm,ym/65))}" y2="${Y(Math.min(xm,ym/65)*65)}" stroke="#ff6a3d" stroke-width="2" stroke-dasharray="5 4"/>`;
  rr.forEach(a=>{s+=`<circle cx="${X(a[2])}" cy="${Y(a[3])}" r="5" fill="#4ea1ff" fill-opacity=".7" stroke="#0b0f17" onmousemove="tp(event,'${fmt(D(a))}: <b>${a[2].toFixed(1)} mi</b>, ${a[3]} ft<br>${Math.round(a[3]/a[2])} ft/mi')" onmouseleave="th()"/>`});
  document.getElementById("sc").innerHTML=s+"</svg>";
+}
+
+// ---- init + live Strava ----
+function renderAll(){renderStats();renderHeat();renderWeekly();renderScatter()}
+setRange(new Date(2026,4,1),new Date(2026,9,31));
+renderAll();
+(function(){
+ const $=id=>document.getElementById(id),msg=t=>{$("liveMsg").textContent=t};
+ const key=()=>$("adminKey").value.trim();
+ try{const k=sessionStorage.getItem("sfmKey");if(k)$("adminKey").value=k}catch(e){}
+ function apply(r){
+  A=r.activities.map(a=>[a[0],a[1],a[2],a[3],a[4]]);
+  const re=new Date(),rs=new Date(re.getFullYear(),re.getMonth(),re.getDate()-182);
+  setRange(rs,re);renderAll();
+  $("dsrc").textContent="Live from Strava, last refreshed "+new Date(r.syncedAt).toLocaleString()+" (runs, walks, rides and other activity, last 26 weeks).";
+  msg("Live data loaded ("+A.length+" activities).");
+ }
+ async function call(url,method){
+  try{sessionStorage.setItem("sfmKey",key())}catch(e){}
+  try{
+   const res=await fetch(url,{method,headers:{"X-Admin-Key":key()}});
+   const body=await res.json().catch(()=>({}));
+   if(res.status===401){msg("Admin key missing or incorrect.");return}
+   if(!res.ok){msg(body.error||body.detail||body.title||"Request failed ("+res.status+").");return}
+   apply(body);
+  }catch(e){msg("Could not reach the server.")}
+ }
+ $("bLoad").onclick=()=>call("/api/strava/activities","GET");
+ $("bRefresh").onclick=()=>{msg("Refreshing from Strava…");call("/api/strava/refresh","POST")};
+ $("bConnect").onclick=()=>{if(!key()){msg("Enter your admin key first.");return}location.href="/auth/strava/login?key="+encodeURIComponent(key())};
+ fetch("/api/strava/status").then(r=>r.ok?r.json():null).then(s=>{
+  if(!s)return;$("live").style.display="block";
+  if(!s.configured)msg("Strava keys are not configured yet. Set Strava__ClientId and Strava__ClientSecret in App Settings.");
+  else if(!s.connected)msg("Not connected yet. Enter your admin key, then press Connect Strava.");
+  else{msg(s.lastSync?"Connected. Last sync "+new Date(s.lastSync).toLocaleString()+".":"Connected. Press Refresh from Strava.");if(key())call("/api/strava/activities","GET")}
+ }).catch(()=>{});
+ const q=new URLSearchParams(location.search).get("strava");
+ if(q){const m={connected:"Strava connected. Press Refresh from Strava to pull your data.",denied:"Strava authorization was cancelled.",scope:"Strava needs activity read permission. Connect again and keep it checked.",badstate:"Connection check failed. Please try Connect Strava again.",error:"Could not complete the Strava connection."};
+  setTimeout(()=>msg(m[q]||""),700);history.replaceState(null,"",location.pathname)}
 })();
 </script>
 </body>

@@ -9,6 +9,12 @@ public class StravaOptions
     public string RedirectUri { get; set; } = "";
 }
 
+public class AppOptions
+{
+    // Protects connect/refresh/read of Strava data. Required for the live Strava features.
+    public string AdminKey { get; set; } = "";
+}
+
 public class GoogleOptions
 {
     public string ClientId { get; set; } = "";
