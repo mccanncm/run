@@ -1,0 +1,393 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>San Francisco Marathon Training Dashboard</title>
+<style>
+:root{--bg:#0b0f17;--card:#131a26;--card2:#18212f;--line:#243044;--tx:#e8edf5;--mut:#8fa0b8;--acc:#ff6a3d;--grn:#35d49a;--blu:#4ea1ff;--yel:#ffc857;--pur:#a98bff}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--tx);font:15px/1.5 system-ui,-apple-system,Segoe UI,Roboto,sans-serif}
+.wrap{max-width:1180px;margin:0 auto;padding:24px 16px 60px}
+h1{font-size:clamp(26px,5vw,42px);margin:0 0 4px;letter-spacing:-.5px}
+h1 span{color:var(--acc)}
+h2{font-size:22px;margin:46px 0 4px}
+.sub{color:var(--mut);margin:0 0 16px}
+.grid{display:grid;gap:14px}
+.g4{grid-template-columns:repeat(auto-fit,minmax(240px,1fr))}
+.g2{grid-template-columns:repeat(auto-fit,minmax(320px,1fr))}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:18px}
+.lbl{font-size:12px;text-transform:uppercase;letter-spacing:.08em;color:var(--mut)}
+.big{font-size:44px;font-weight:800;line-height:1.1;margin:6px 0}
+.big small{font-size:16px;color:var(--mut);font-weight:600}
+.vs{display:flex;justify-content:space-between;font-size:13px;color:var(--mut);margin-top:8px}
+.vs b{color:var(--tx)}
+.bar{height:8px;background:#0b0f17;border-radius:8px;overflow:hidden;margin-top:10px}
+.bar i{display:block;height:100%;border-radius:8px}
+.pill{display:inline-block;padding:2px 9px;border-radius:99px;font-size:12px;font-weight:600}
+.tabs{display:flex;gap:8px;margin:14px 0;flex-wrap:wrap}
+.tab{background:var(--card);border:1px solid var(--line);color:var(--mut);padding:9px 16px;border-radius:10px;cursor:pointer;font:inherit;font-weight:600}
+.tab.on{background:var(--acc);border-color:var(--acc);color:#fff}
+.note{background:var(--card2);border-left:3px solid var(--yel);padding:12px 14px;border-radius:8px;color:#cfd8e6;margin:10px 0}
+.tw{overflow-x:auto;border:1px solid var(--line);border-radius:14px}
+table{border-collapse:collapse;width:100%;min-width:860px;background:var(--card)}
+th,td{padding:10px 12px;text-align:left;border-bottom:1px solid var(--line);vertical-align:top;font-size:14px}
+th{background:var(--card2);font-size:12px;text-transform:uppercase;letter-spacing:.06em;color:var(--mut);position:sticky;top:0}
+tr.cb td{background:#101826}
+tr.now td{outline:2px solid var(--blu);outline-offset:-2px}
+tr.race td{background:#2a1a14}
+.wk{font-weight:800}
+.dt{color:var(--mut);font-size:12px}
+.tot{font-weight:700}
+.hill{color:var(--acc);font-weight:700}
+.opt{color:var(--pur);font-size:13px}
+.tg{margin-top:4px;font-size:12px;color:var(--grn);font-weight:600}
+.hc{display:grid;gap:12px}
+.wo h3{margin:0 0 4px;font-size:16px}
+.wo p{margin:4px 0;color:#cfd8e6;font-size:14px}
+.tag{font-size:11px;color:var(--mut);text-transform:uppercase;letter-spacing:.07em}
+svg{max-width:100%;height:auto;display:block}
+.leg{display:flex;gap:14px;flex-wrap:wrap;font-size:12px;color:var(--mut);margin-top:8px;align-items:center}
+.leg i{display:inline-block;width:12px;height:12px;border-radius:3px;margin-right:5px;vertical-align:-1px}
+.hm{overflow-x:auto}
+ul{padding-left:18px;margin:6px 0}
+li{margin:3px 0;color:#cfd8e6;font-size:14px}
+footer{margin-top:40px;color:var(--mut);font-size:12px}
+#tip{position:fixed;pointer-events:none;background:#000c;border:1px solid var(--line);padding:6px 9px;border-radius:8px;font-size:12px;display:none;z-index:9;max-width:240px}
+</style>
+</head>
+<body>
+<div id="tip"></div>
+<div class="wrap">
+<h1>San Francisco Marathon <span>Training Dashboard</span></h1>
+<p class="sub">Goal: finish between 4:30:00 and 5:00:00 &middot; Race: Sunday, July 25, 2027 &middot; <b id="cd"></b></p>
+
+<!-- 1. BASELINE -->
+<div class="grid g4" id="stats"></div>
+<div class="note"><b>Pace guide (4:30–5:00 goal):</b> 4:30 = 10:18/mi &nbsp;&middot;&nbsp; 4:45 = 10:52/mi &nbsp;&middot;&nbsp; 5:00 = 11:27/mi. On a course with ~1,700 ft of climbing, plan to run by effort on climbs and bank no time early. Your May half marathon (13.19 mi at 9:02/mi) suggests the fitness ceiling is well above this goal once your base is rebuilt, so the plan prioritizes durability over speed.</div>
+
+<!-- 2. CALENDAR -->
+<h2>Two-Phase Periodized Calendar</h2>
+<p class="sub">3 runs a week: <b>Tue</b> Hill/Tempo &middot; <b>Thu</b> Easy/Recovery &middot; <b>Sun</b> Long Run (<span class="hill">&#9968; = needs elevation</span>). Day 4 is optional cross-training and only recommended at peak.</p>
+<div class="note" style="border-color:var(--grn)"><b>Pace &amp; effort key</b> &nbsp;&middot;&nbsp; <b>Easy:</b> 10:30–11:30/mi, HR 131–157 (conversational) &nbsp;&middot;&nbsp; <b>Long run:</b> 11:00–11:45/mi, HR 131–157 &nbsp;&middot;&nbsp; <b>Tempo:</b> 9:30–9:50/mi (RPE 6–7) &nbsp;&middot;&nbsp; <b>Goal pace (MP):</b> 10:40–10:55/mi (4:45 = 10:52) &nbsp;&middot;&nbsp; <b>Climbs:</b> about MP +20–30 s/mi (11:10–11:25) &nbsp;&middot;&nbsp; <b>Hill reps:</b> by effort, RPE 8 (5K–10K effort), since grade distorts pace &nbsp;&middot;&nbsp; <b>Strides:</b> RPE 7, fast but relaxed. HR zone 2 = 131–157 bpm from your earlier Strava training targets, so adjust if your zones have changed.</div>
+<div class="tabs">
+<button class="tab on" data-p="base">Phase 1 &middot; Base-Building (Nov 2 – Apr 4)</button>
+<button class="tab" data-p="block">Phase 2 &middot; Official 16-Week Block (Apr 5 – Jul 25)</button>
+</div>
+<div id="phnote"></div>
+<div class="tabs" style="align-items:center">
+<button class="tab" id="exCur" style="border-color:var(--grn);color:var(--grn)">&#128197; Export this phase to calendar (.ics)</button>
+<button class="tab" id="exAll" style="border-color:var(--grn);color:var(--grn)">&#128197; Export full plan (.ics)</button>
+<button class="tab" id="exCopy" style="border-color:var(--blu);color:var(--blu)">&#128203; Copy for Google Sheets</button>
+<button class="tab" id="exCsv" style="border-color:var(--blu);color:var(--blu)">&#11015; Download CSV</button>
+<a class="tab" id="exNew" href="https://sheets.new" target="_blank" rel="noopener" style="border-color:var(--blu);color:var(--blu);text-decoration:none">&#10133; Open new Google Sheet</a>
+<span class="dt" id="exMsg">Calendar: .ics for Google, Apple or Outlook. Sheets: copy, then paste into cell A1.</span>
+</div>
+<div class="note" id="gnote" style="border-color:var(--grn)"><b>Getting it to your Garmin:</b> Garmin Connect can&rsquo;t import calendar files directly. The reliable route is to import the .ics into Google Calendar (or Outlook/Apple), then use Garmin Connect&rsquo;s calendar integration (Connect &gt; Calendar &gt; Settings, where available) or just follow it from your phone. For on-watch structured workouts, create them in Garmin Connect (Training &gt; Workouts) using each day&rsquo;s description.</div>
+<div class="tw"><table><thead><tr><th>Wk</th><th>Dates</th><th>Tue &middot; Hill / Tempo</th><th>Thu &middot; Easy / Recovery</th><th>Sun &middot; Long Run</th><th>Total</th><th>Day 4 (optional)</th></tr></thead><tbody id="rows"></tbody></table></div>
+<div class="card" style="margin-top:14px"><div class="lbl">Planned weekly mileage</div><div id="vol"></div><div class="leg"><span><i style="background:var(--blu)"></i>Base</span><span><i style="background:var(--acc)"></i>Marathon block</span><span><i style="background:#3a475c"></i>Cutback week</span></div></div>
+
+<!-- 3. HILLS -->
+<h2>Hill Workouts &amp; Route Strategy</h2>
+<p class="sub">Build the climb first, then the descent. Downhill running causes most of the muscle damage in hilly marathons, so practice it on purpose.</p>
+<div class="grid g2">
+<div class="hc">
+<div class="card wo"><span class="tag">Base &middot; weeks 5–16</span><h3>Short hill repeats (45–60 s)</h3><p>4–5% grade, 6–8 reps at 5K–10K effort, jog down fully recovered. Focus on tall posture and quick cadence.</p></div>
+<div class="card wo"><span class="tag">Block &middot; weeks 1–7</span><h3>800 m hill repeats</h3><p>5–6 reps at 10K–half marathon effort on a 3–5% grade. Jog back down. Last rep should match the first.</p></div>
+<div class="card wo"><span class="tag">Block &middot; weeks 5–11</span><h3>Sustained 1-mile climbs</h3><p>2–3 climbs of one mile at steady-hard effort (about marathon effort plus 20–30 s/mi), then cruise the descent relaxed. This is the Golden Gate Bridge approach workout.</p></div>
+<div class="card wo"><span class="tag">Block &middot; weeks 7–13</span><h3>Down-and-control repeats</h3><p>3–4 x 0.3 mi downhill at marathon effort with short steps and a slight forward lean. Builds quad durability for SF&rsquo;s long descents.</p></div>
+<div class="card wo"><span class="tag">Block &middot; weeks 10–13</span><h3>Goal-pace rolling run</h3><p>6 miles at 10:40–10:55/mi on rolling roads. Hold effort on the climbs, let pace recover on the descents.</p></div>
+</div>
+<div class="hc">
+<div class="card wo"><span class="tag">Route type</span><h3>The &ldquo;Bridge Approach&rdquo; climb</h3><p>A long, steady 0.7–1.2 mi road or greenway climb at 3–5%. Use it for sustained 1-mile climbs. Overpass or levee-top approaches work if no continuous hill is nearby.</p></div>
+<div class="card wo"><span class="tag">Route type</span><h3>Golden Gate Park rollers</h3><p>A looping park route (like a 5-mile scenic drive loop) with constant 20–60 ft rises and drops. Ideal for long runs, easy hilly days and goal-pace rolling work.</p></div>
+<div class="card wo"><span class="tag">Route type</span><h3>Neighborhood punch hills</h3><p>Short steep streets (8–12%) for strides and power reps. Walk the steepest bit if needed; as you noted on your Aug 2 run, walking up hills isn&rsquo;t a failure.</p></div>
+<div class="card wo"><span class="tag">Winter / bad weather</span><h3>Treadmill hill session</h3><p>Use 4–6% incline for 3–5 min climbs, then 0–1% recovery. Do the downhill practice outdoors, since treadmills barely train eccentric load.</p></div>
+<div class="card wo"><span class="tag">Elevation targets for long runs</span><h3>Match the course profile</h3><p>The race is roughly 65 ft per mile. Peak long runs target 65–85 ft/mi, for example about 1,600–1,700 ft in a 20-miler. Your best so far is 669 ft in 5.8 mi, so the capacity is already there.</p></div>
+</div>
+</div>
+<p class="sub" style="margin-top:12px">Check the official course map before race week; routes and aid stations change year to year.</p>
+
+<!-- RECOVERY & PREP -->
+<h2>Recovery &amp; Race Prep</h2>
+<p class="sub">Most of your fitness gets built in the recovery between runs. With only 3 run days a week, the off days matter as much as the workouts.</p>
+<div class="grid g2">
+<div class="hc">
+<div class="card wo"><span class="tag">Every week</span><h3>Recovery basics</h3>
+<ul><li><b>Sleep:</b> aim for 7–9 hours, and protect the night before Sunday long runs.</li>
+<li><b>Post-run fueling:</b> eat carbs plus protein within about an hour of hard sessions and long runs.</li>
+<li><b>Easy means easy:</b> Thursday runs and long runs stay conversational so Tuesday and Sunday can be your hard days.</li>
+<li><b>Cutback weeks:</b> every 4th week drops volume on purpose. Don&rsquo;t skip them.</li>
+<li><b>Day after long run:</b> walk or easy spin for 20–30 minutes instead of resting completely.</li></ul></div>
+<div class="card wo"><span class="tag">Strength &middot; 2×/week, 15–25 min</span><h3>Leg strength for hills and descents</h3>
+<ul><li>Split squats or reverse lunges: 3×8 per leg</li>
+<li>Step-ups onto a bench: 3×10 per leg (your hill climbing muscles)</li>
+<li>Single-leg calf raises: 3×12, with slow lowering</li>
+<li>Glute bridges or hip thrusts: 3×12</li>
+<li>Side planks and dead bugs: 2×30 s per side</li>
+<li><b>Descent prep (block phase):</b> slow eccentric step-downs, 3×8 per leg.</li></ul>
+<p class="dt">Do strength on Mon, Wed or Fri, not before Tue hills or Sun long runs. Keep it light the week before a 20-miler.</p></div>
+<div class="card wo"><span class="tag">Daily, 5–10 min</span><h3>Mobility</h3><p>Ankle and calf mobility, hip flexor and hamstring stretches, and foam rolling for quads and calves. Hill running loads the calves and Achilles hard, so give them extra attention.</p></div>
+</div>
+<div class="hc">
+<div class="card wo"><span class="tag">Red flags</span><h3>When to back off</h3>
+<ul><li>Pain that changes how you run, or gets worse during a run</li>
+<li>Sharp pain in the shin, foot, hip or heel (possible stress injury)</li>
+<li>Achilles or knee pain after hills or descents that lasts more than 2 days</li>
+<li>Resting heart rate up and mood or sleep off for several days</li></ul>
+<p class="dt">Swap that run for a bike ride, or take a rest day. If pain persists, see a sports medicine clinician before the next hard week.</p></div>
+<div class="card wo"><span class="tag">Gear</span><h3>Shoes and kit</h3>
+<ul><li>Rotate two pairs of shoes and replace them around 300–500 miles.</li>
+<li>Buy your race shoes by mid-May so you have 100+ miles in them before race day.</li>
+<li>Wear your exact race kit on at least two long runs. Test shorts, socks, a hat or visor and anti-chafe balm.</li>
+<li>SF mornings are cool, foggy and windy near the bridge. Plan removable layers such as arm sleeves and a throwaway top for the start.</li></ul></div>
+<div class="card wo"><span class="tag">Fueling</span><h3>Practice race-day nutrition</h3>
+<ul><li>On runs over 75 minutes, practice taking about 30–60 g of carbs per hour. Build up gradually toward what your stomach handles.</li>
+<li>Use the same gels or chews the race provides, if possible, and test them in training.</li>
+<li>Drink to thirst, add electrolytes on long or warm runs, and don&rsquo;t try anything new on race morning.</li></ul></div>
+</div>
+</div>
+<div class="card" style="margin-top:14px"><div class="lbl">Taper &amp; race-week timeline</div>
+<div class="tw" style="margin-top:10px"><table style="min-width:640px"><thead><tr><th>When</th><th>What to do</th></tr></thead><tbody>
+<tr><td class="wk">Block wk 13 (Jun 28)</td><td>Last long run at 18 mi with a marathon-pace finish. Rehearse fueling and race-day kit.</td></tr>
+<tr><td class="wk">Block wk 14 (Jul 5)</td><td>Taper starts: 14-mile long run, volume down to about 26 miles. Keep some marathon-pace work so legs stay sharp.</td></tr>
+<tr><td class="wk">Block wk 15 (Jul 12)</td><td>10-mile long run, about 20 miles total. Book sleep, confirm logistics, check weather trends.</td></tr>
+<tr><td class="wk">Race week (Jul 19)</td><td>Easy 4 mi with strides Tue, 3 mi Thu. Pick up your bib at the expo early. Eat familiar carb-rich meals and lay out kit on Saturday.</td></tr>
+<tr><td class="wk">Race day, Sun Jul 25</td><td>Start slower than goal pace for the first 5 miles, climb by effort, and let the downhills carry you without braking hard. A steady 4:45 pace is 10:52/mi on average. Fuel on schedule from the start.</td></tr>
+</tbody></table></div>
+<p class="dt" style="margin-top:8px">Confirm start time, corrals, bag check and the course map on the official race site before race week.</p></div>
+
+<!-- 4. ANALYTICS -->
+<h2>Visual Analytics &middot; Last 6 Months</h2>
+<p class="sub">Strava data from May 1 to Oct 31, 2026 (runs, walks, rides and other activity).</p>
+<div class="card"><div class="lbl">Activity heat map (each column is one week, Mon–Sun)</div><div class="hm" id="heat"></div>
+<div class="leg"><span><i style="background:#1b2535"></i>Rest</span><span><i style="background:#2f5d8c"></i>Walk / other only</span><span><i style="background:#1c6b54"></i>&lt;3 mi</span><span><i style="background:#25a37a"></i>3–5 mi</span><span><i style="background:#35d49a"></i>5–8 mi</span><span><i style="background:#c5ffe8"></i>8+ mi</span></div></div>
+<div class="grid g2" style="margin-top:14px">
+<div class="card"><div class="lbl">Weekly running distance (bars) vs elevation gain (line)</div><div id="wk"></div><div class="leg"><span><i style="background:var(--grn)"></i>Miles</span><span><i style="background:var(--yel)"></i>Elevation (ft)</span></div></div>
+<div class="card"><div class="lbl">Elevation gain vs distance, every run</div><div id="sc"></div><div class="leg"><span><i style="background:var(--blu)"></i>Run</span><span><i style="background:var(--acc)"></i>SF course profile (~65 ft/mi)</span></div></div>
+</div>
+<h2>Downloads</h2>
+<p class="sub">Take the plan to your watch, calendar or spreadsheet.</p>
+<div class="grid g4">
+<a class="card" href="downloads/sf_marathon_garmin_steps.html" style="text-decoration:none;color:inherit"><div class="lbl">Readable</div><b>Garmin workout steps</b><div class="dt">All 114 workouts, step by step, to build in Garmin Connect</div></a>
+<a class="card" href="downloads/sf_marathon_garmin_steps.csv" style="text-decoration:none;color:inherit"><div class="lbl">Spreadsheet</div><b>Workout steps (CSV)</b><div class="dt">Same steps for Google Sheets or Excel</div></a>
+<a class="card" href="downloads/sf_marathon_fit_workouts.zip" style="text-decoration:none;color:inherit"><div class="lbl">Watch files</div><b>Garmin .fit workouts</b><div class="dt">114 files to copy to your watch over USB</div></a>
+</div>
+<footer>Training guidance only; adjust for how you feel and see a clinician for pain that changes your gait. Weekly totals exclude walks and cross-training.</footer>
+</div>
+
+<script>
+// ---- Strava data: [MMDD, type(R/W/O), miles, elev ft, minutes] ----
+const A=[["0502","R",5.01,39,57.5],["0503","R",10.01,233,112.2],["0506","R",4.89,56,47.5],["0507","W",1.74,30,40],["0509","R",4.51,52,49.2],["0510","R",12.01,197,121.6],["0514","R",4.32,66,42.2],["0516","R",4.51,43,47],["0517","W",2.58,117,94],["0517","R",8.55,364,88.3],["0517","R",.67,13,8.6],["0519","W",2.07,16,38],["0520","R",3.35,36,31.7],["0523","R",4.51,52,46.5],["0524","R",6.01,79,62.1],["0526","O",2.61,33,35],["0527","R",3.51,39,32.6],["0530","R",13.19,75,119.1],["0604","R",3.15,52,33.1],["0607","W",.63,33,24],["0611","R",3.28,33,34],["0613","R",3.81,36,39.7],["0616","R",4.31,59,46.3],["0618","R",5.03,62,52.1],["0618","O",2.4,79,58],["0620","W",.71,108,26],["0621","R",4.01,59,44],["0627","W",.7,10,21],["0628","W",1.96,82,49],["0629","W",1.59,20,38],["0702","R",3.65,39,36.1],["0705","R",5.73,85,60.9],["0711","R",4.17,43,40.1],["0712","R",1.77,46,20.1],["0714","R",2.89,23,30.2],["0716","R",5.18,56,50.1],["0718","O",3.38,66,42],["0719","R",4.32,98,45.1],["0721","R",4.03,56,40],["0723","R",4.29,56,44],["0724","R",3.07,26,32.1],["0725","R",2.07,39,24.1],["0725","W",1.58,68,51],["0726","R",6.4,98,65.1],["0801","R",3.51,46,43],["0802","R",1.03,20,11.1],["0802","R",5.83,669,65.3],["0802","W",.43,13,12],["0808","R",2.97,49,33],["0809","R",5.73,62,53.6],["0811","W",1.47,52,36],["0813","R",2.96,26,30.3],["0814","R",2.51,36,28.5],["0816","R",5.0,518,58.8],["0817","O",0,0,22],["0820","R",2.82,135,30.8],["0821","R",3.79,302,43.8],["0829","R",3.58,52,38.6],["0905","R",3.14,39,35.1],["0906","W",1.99,108,48],["0906","R",4.11,59,48.1],["0909","R",3.64,98,35.1],["0910","O",0,0,8],["0913","R",5.32,102,58.1],["0919","R",3.58,30,37.1],["0920","W",3.05,295,100],["0922","R",2.47,72,27.2],["0925","W",1.05,39,32],["0927","R",1.66,33,18.2],["1003","R",1.54,62,19.8],["1010","R",2.72,33,34.8],["1011","R",4.21,39,44.9],["1011","W",.79,33,16],["1013","R",2.64,23,29.1],["1015","R",2.7,46,30.7],["1017","R",2.17,33,23.1],["1019","R",5.71,59,58.8],["1025","R",4.38,226,48.6],["1027","R",4.3,56,42.1],["1029","R",.35,49,4.2],["1030","R",2.81,0,30.1]];
+const D=a=>new Date(2026,+a[0].slice(0,2)-1,+a[0].slice(2));
+const MON=["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+const fmt=d=>MON[d.getMonth()]+" "+d.getDate();
+const W0=new Date(2026,3,27); // Monday Apr 27
+const wkIdx=d=>Math.floor((d-W0)/6048e5);
+const NW=27, runs=A.filter(a=>a[1]==="R");
+const wk=Array.from({length:NW},(_,i)=>({mi:0,el:0,n:0,s:new Date(2026,3,27+7*i)}));
+runs.forEach(a=>{const w=wk[wkIdx(D(a))];w.mi+=a[2];w.el+=a[3];w.n++});
+const tip=document.getElementById("tip");
+function tp(e,t){tip.style.display="block";tip.innerHTML=t;tip.style.left=Math.min(e.clientX+12,innerWidth-250)+"px";tip.style.top=(e.clientY+12)+"px"}
+function th(){tip.style.display="none"}
+
+// ---- 1. stats ----
+const totMi=runs.reduce((s,a)=>s+a[2],0), totEl=runs.reduce((s,a)=>s+a[3],0);
+const avg6=totMi/(184/7);
+const recent=wk.filter(w=>w.s>=new Date(2026,8,7)); // 8 wks from Sep 7
+const avg8=recent.reduce((s,w)=>s+w.mi,0)/recent.length;
+const longest=Math.max(...runs.map(a=>a[2]));
+const rl=Math.max(...runs.filter(a=>D(a)>=new Date(2026,8,7)).map(a=>a[2]));
+const maxEl=runs.reduce((m,a)=>a[3]>m[3]?a:m,runs[0]);
+function card(l,v,u,cur,tgt,col,t1,t2){const p=Math.min(100,cur/tgt*100);return `<div class="card"><div class="lbl">${l}</div><div class="big">${v}<small> ${u}</small></div><div class="bar"><i style="width:${p}%;background:${col}"></i></div><div class="vs"><span>${t1}</span><span>${t2}</span></div></div>`}
+document.getElementById("stats").innerHTML=
+ card("Avg weekly volume (last 8 wks)",avg8.toFixed(1),"mi/wk",avg8,35,"var(--blu)",`6-mo avg <b>${avg6.toFixed(1)}</b>`,"Peak target <b>34–35</b>")+
+ card("Longest run, last 8 wks",rl.toFixed(1),"mi",rl,20,"var(--grn)",`6-mo best <b>${longest.toFixed(1)}</b> (half marathon)`,"Peak target <b>18–20</b>")+
+ card("Biggest climbing run",Math.round(maxEl[3]).toLocaleString(),"ft",maxEl[3],1700,"var(--yel)",`in ${maxEl[2].toFixed(1)} mi (${Math.round(maxEl[3]/maxEl[2])} ft/mi)`,"Course <b>~1,700 ft</b>")+
+ card("6-month running total",totMi.toFixed(0),"mi",totMi,800,"var(--pur)",`${runs.length} runs &middot; ${Math.round(totEl).toLocaleString()} ft`,"Plan total <b>~850 mi</b>");
+const race=new Date(2027,6,25), now=new Date();
+const dl=Math.ceil((race-now)/864e5);
+document.getElementById("cd").textContent=dl>0?dl+" days ("+(dl/7).toFixed(1)+" weeks) to race day":"Race day!";
+
+// ---- 2. plan ----
+const base={
+ tue:[3,3.5,3.5,3,4,4.5,4.5,4,5,5,5.5,4.5,5.5,6,6,5,6,6.5,6.5,5,7,7],
+ thu:[3,3,3.5,3,4,4,4,3.5,4.5,4.5,5,4,5,5,5,4,5,5,5.5,4,5,5],
+ sun:[5,5.5,6,5,7,7.5,8,6,8.5,9.5,10,7,10.5,11,12,8,12,12.5,13,9,13,14],
+ tt:["Easy + 4×15 s gentle-hill strides","Easy + 5×15 s strides","Easy + 6×20 s hill strides","Easy + 4×15 s strides (cutback)","Hill reps 6×45 s @ 5K effort, jog down","Hill reps 7×45 s","Hill reps 8×45 s","Hill reps 5×45 s (cutback)","Hill reps 6×60 s @ 10K effort","Hill reps 7×60 s","Hill reps 8×60 s","Hill reps 5×60 s (cutback)","Tempo 15 min @ 9:35–9:50/mi","Tempo 2×10 min, 3 min jog between","Tempo 20 min + 4×30 s hill strides","Tempo 12 min (cutback)","Hills 6×90 s, moderate-steep","Tempo 25 min on rolling roads","Hills 5×2 min at tempo effort","5K time trial: mid-March checkpoint, reset paces","2×1-mile sustained climb (block preview)","Tempo 30 min on rolling roads"],
+ cb:[3,7,11,15,19],
+ el:{5:350,9:450,13:600,17:750,21:900}
+};
+const blk={
+ tue:[6,6,7,5,7,8,8,6,8,9,9,6,9,7,6,4],
+ thu:[5,5,5,4,6,6,6,5,6,6,6,5,6,5,4,3],
+ sun:[14,15,16,12,17,18,19,13,20,18,20,14,18,14,10,26.2],
+ tt:["Hill reps 6×400 m @ 5K effort","Tempo 4 mi @ 9:30–9:45/mi","Hill reps 5×800 m, jog down","Easy fartlek + 6×20 s strides (cutback)","2×1-mile sustained climb, steady-hard","Tempo 5 mi on rolling roads","800 m hill reps ×6 + 3×0.3 mi controlled descents","Tempo 3 mi (cutback)","3×1-mile climb + relaxed downhill cruise","Goal-pace rolling run: 6 mi @ 10:40–10:55/mi","Hill reps 6×800 m + 2 mi tempo","2×1-mile climb, moderate (cutback)","Goal-pace rolling run: 6 mi, hold effort on climbs","Tempo 3 mi + 4×30 s hill strides","Goal-pace sharpener: 3 mi @ MP","Easy 4 mi + 4 strides"],
+ st:["rolling","rolling","hilly","","hilly","hilly","hilly","","hilly","hilly","hilly","","hilly","","",""],
+ el:[0,0,900,0,1100,1300,1400,0,1600,1400,1700,0,1300,0,0,0],
+ note:["","","","","last 2 mi @ MP","","last 3 mi @ MP on a climb/descent mix","","last 4 mi @ MP, practice fueling","","last 5 mi @ MP, race-kit rehearsal","","last 4 mi @ MP","easy, hills optional","","MARATHON · Sunday Jul 25 · 5:15 AM start"],
+ d4:{5:"Optional: 45 min bike or elliptical",6:"Optional: 45 min bike or elliptical",8:"Recommended: 3 mi easy Sat or 45 min bike",9:"Recommended: 45–60 min bike (low impact volume)",10:"Recommended: 45–60 min bike (low impact volume)",12:"Optional: 45 min bike or elliptical"}
+};
+const tf=t=>Number.isInteger(t)?t:t.toFixed(1);
+const ST="Strides RPE 7, fast but relaxed";
+base.tg=[...Array(4).fill("Easy 10:30–11:30/mi, HR 131–157; "+ST),...Array(4).fill("Reps RPE 8 (5K effort, by feel); jog down; easy HR 131–157"),...Array(4).fill("Reps RPE 8 (10K effort, by feel); jog down; easy HR 131–157"),"Tempo 9:35–9:50/mi (RPE 6–7)","Tempo 9:35–9:50/mi (RPE 6–7), 3 min jog between","Tempo 9:35–9:50/mi; strides RPE 7","Tempo 9:35–9:50/mi (RPE 6–7)","Reps RPE 7–8 by feel; easy HR 131–157 between","Tempo 9:30–9:45/mi on rolling roads; hold effort on climbs","Reps RPE 7 (tempo effort); jog down","Even effort, RPE 9 (likely 9:00–9:30/mi); use result to reset paces","Climbs RPE 7, about 11:10–11:25/mi; jog down","Tempo 9:30–9:45/mi, rolling"];
+blk.tg=["Reps RPE 8 (5K effort); jog down","Tempo 9:30–9:45/mi","Reps RPE 8 (10K–half effort); jog down","Easy 10:30–11:30/mi, HR 131–157; "+ST,"Climbs RPE 7, about 11:10–11:25/mi; jog down","Tempo 9:30–9:45/mi, rolling","Reps RPE 8; descents at MP effort (10:40–10:55/mi)","Tempo 9:30–9:45/mi","Climbs RPE 7, about 11:10–11:25/mi; cruise down relaxed","10:40–10:55/mi; hold effort on climbs","Reps RPE 8; tempo 9:30–9:45/mi","Climbs RPE 6 (moderate); jog down","10:40–10:55/mi; hold effort on climbs","Tempo 9:30–9:45/mi; strides RPE 7","Goal pace 10:40–10:55/mi","Easy 10:30–11:30/mi, HR 131–157; "+ST];
+const MPMI=[0,0,0,0,2,0,3,0,4,0,5,0,4,0,0,0];
+const thuT="Easy 10:30–11:30/mi · HR 131–157";
+function sunTarget(p,i){
+ if(p==="base")return "Easy 11:00–11:45/mi · HR 131–157";
+ if(i===15)return "Goal 4:45 = 10:52/mi avg. First 5 mi at 11:00–11:15, climb by effort, then 10:45–10:55";
+ if(MPMI[i])return `Easy 11:00–11:45/mi, last ${MPMI[i]} mi at 10:40–10:55/mi`;
+ return "Easy 11:00–11:45/mi · HR 131–157";
+}
+function rowsFor(p){
+ let h="",st=p==="base"?new Date(2026,10,2):new Date(2027,3,5),n=p==="base"?22:16,P=p==="base"?base:blk;
+ for(let i=0;i<n;i++){
+  const s=new Date(st.getFullYear(),st.getMonth(),st.getDate()+7*i),e=new Date(s.getFullYear(),s.getMonth(),s.getDate()+6);
+  const sun=P.sun[i],tot=P.tue[i]+P.thu[i]+sun;
+  const isCb=p==="base"?base.cb.includes(i):[3,7,11].includes(i);
+  const isNow=now>=s&&now<new Date(e.getFullYear(),e.getMonth(),e.getDate()+1);
+  const isRace=p==="block"&&i===15;
+  let longTxt,d4="&mdash;";
+  if(p==="base"){
+   const el=base.el[i];
+   longTxt=`${tf(sun)} mi conversational`+(el?` <span class="hill">&#9968; ~${el} ft</span>`:"");
+   d4=i>=4?'<span class="opt">Optional: 20–30 min leg strength</span>':'<span class="opt">Optional: 15–20 min leg strength</span>';
+   if(i===19)longTxt+='<div class="dt">Mid-March checkpoint</div>';
+   if(i>=19)longTxt+='<div class="dt">Bridge week '+(i-18)+' of 3 into the block</div>';
+  }else{
+   const el=blk.el[i];
+   longTxt=`${tf(sun)} mi`+(el?` <span class="hill">&#9968; ~${el.toLocaleString()} ft</span>`:(blk.st[i]==="rolling"?' <span class="dt">gentle rollers</span>':""))+(blk.note[i]?`<div class="dt">${blk.note[i]}</div>`:"");
+   if(blk.d4[i+1])d4=`<span class="opt">${blk.d4[i+1]}</span>`;
+  }
+  h+=`<tr class="${isCb?"cb":""} ${isNow?"now":""} ${isRace?"race":""}"><td class="wk">${p==="base"?"B":"M"}${i+1}${isCb?'<div class="dt">cutback</div>':""}${isNow?'<div class="dt" style="color:var(--blu)">this week</div>':""}</td><td class="dt">${fmt(s)}–${fmt(e)}</td><td>${P.tt[i]}<div class="dt">${tf(P.tue[i])} mi total</div><div class="tg">&#127919; ${P.tg[i]}</div></td><td>${tf(P.thu[i])} mi easy<div class="dt">${isRace?"shakeout":"conversational"}</div><div class="tg">&#127919; ${thuT}</div></td><td>${longTxt}<div class="tg">&#127919; ${sunTarget(p,i)}</div></td><td class="tot">${tf(tot)} mi</td><td>${d4}</td></tr>`;
+ }
+ return h;
+}
+function volChart(){
+ const all=[...base.sun.map((s,i)=>({t:base.tue[i]+base.thu[i]+s,c:base.cb.includes(i)?"#3a475c":"var(--blu)",l:"Base wk "+(i+1)})),...blk.sun.map((s,i)=>({t:blk.tue[i]+blk.thu[i]+s,c:[3,7,11].includes(i)?"#3a475c":"var(--acc)",l:"Block wk "+(i+1)}))];
+ const w=1000,h=190,bw=w/all.length;
+ let s=`<svg viewBox="0 0 ${w} ${h+20}" role="img" aria-label="Planned weekly mileage">`;
+ [10,20,30,40].forEach(v=>{const y=h-v/42*h;s+=`<line x1="0" x2="${w}" y1="${y}" y2="${y}" stroke="#243044"/><text x="2" y="${y-3}" fill="#8fa0b8" font-size="11">${v}</text>`});
+ all.forEach((a,i)=>{const bh=a.t/42*h;s+=`<rect x="${i*bw+1.5}" y="${h-bh}" width="${bw-3}" height="${bh}" rx="2" fill="${a.c}" onmousemove="tp(event,'${a.l}: <b>${a.t.toFixed(1)} mi</b>')" onmouseleave="th()"/>`});
+ return s+`<text x="${22*bw}" y="${h+15}" fill="#8fa0b8" font-size="11" text-anchor="middle">Mid-Mar</text></svg>`;
+}
+let cur="base";
+function render(){
+ document.getElementById("rows").innerHTML=rowsFor(cur);
+ document.getElementById("phnote").innerHTML=cur==="base"
+  ?`<div class="note"><b>Base-Building (22 weeks, Nov 2 – Apr 4):</b> all easy running is conversational (about HR 131–157, roughly 10:30–11:45/mi). Tuesday sessions progress from strides to short hill reps to tempo. Add 2 short leg-strength sessions a week (split squats, step-ups, calf raises, glute bridges). Volume climbs from ~11 to ~26 mi/week with a cutback every 4th week. <b>Note:</b> counting 16 weeks back from Jul 25 puts the official block start at Apr 5, not mid-March, so Mar 15 – Apr 4 is a three-week bridge that keeps your mid-March checkpoint (5K time trial) while arriving at the block ready.</div>`
+  :`<div class="note"><b>Official 16-Week Block (Apr 5 – Jul 25):</b> volume grows to a 35-mile peak with 20-mile long runs in weeks 9 and 11, hill work shifts to sustained climbs and controlled descents, and the last 4–6 miles of key long runs finish at marathon pace (10:30–10:55/mi). Taper begins week 14. Fuel and hydrate on every long run as you will on race day.</div>`;
+}
+document.querySelectorAll(".tab").forEach(b=>b.onclick=()=>{document.querySelectorAll(".tab").forEach(x=>x.classList.remove("on"));b.classList.add("on");cur=b.dataset.p;render()});
+render();
+document.getElementById("vol").innerHTML=volChart();
+
+// ---- ICS export ----
+function icsEsc(t){return String(t).replace(/<[^>]*>/g," ").replace(/\\/g,"\\\\").replace(/;/g,"\\;").replace(/,/g,"\\,").replace(/\n/g,"\\n")}
+function ymd(d){return d.getFullYear()+String(d.getMonth()+1).padStart(2,"0")+String(d.getDate()).padStart(2,"0")}
+function evFor(p){
+ const P=p==="base"?base:blk,n=p==="base"?22:16,st=p==="base"?new Date(2026,10,2):new Date(2027,3,5),out=[];
+ for(let i=0;i<n;i++){
+  const wkn=(p==="base"?"B":"M")+(i+1);
+  const days=[
+   [1,"Hill/Tempo",P.tue[i],P.tt[i]+". Target: "+P.tg[i]+". "],
+   [3,"Easy",P.thu[i],"Easy run. Target: "+thuT+". "],
+   [6,"Long Run",P.sun[i],(p==="base"?(base.el[i]?"Hilly long run, target about "+base.el[i]+" ft gain. ":"")+"Target: "+sunTarget(p,i)+".":(blk.el[i]?"Elevation long run, target about "+blk.el[i]+" ft gain. ":"")+(blk.note[i]||"")+" Target: "+sunTarget(p,i)+".")]
+  ];
+  days.forEach(([off,lab,mi,desc])=>{
+   const d=new Date(st.getFullYear(),st.getMonth(),st.getDate()+7*i+off),e=new Date(d.getFullYear(),d.getMonth(),d.getDate()+1);
+   const race=p==="block"&&i===15&&off===6;
+   out.push(["BEGIN:VEVENT","UID:sfm-"+p+"-"+(i+1)+"-"+off+"@sf-marathon-dashboard","DTSTAMP:20261101T000000Z","DTSTART;VALUE=DATE:"+ymd(d),"DTEND;VALUE=DATE:"+ymd(e),
+    "SUMMARY:"+icsEsc((race?"RACE: SF Marathon 26.2 mi":"SFM "+wkn+" "+lab+" - "+tf(mi)+" mi")),
+    "DESCRIPTION:"+icsEsc(desc+" (Week "+wkn+", "+tf(mi)+" mi. Goal 4:30-5:00, 10:18-11:27/mi.)"),"TRANSPARENT:TRANSPARENT","END:VEVENT"].join("\r\n"));
+  });
+ }
+ return out;
+}
+function dl_ics(phases,name){
+ const ev=phases.flatMap(evFor);
+ const txt=["BEGIN:VCALENDAR","VERSION:2.0","PRODID:-//SF Marathon Dashboard//EN","CALSCALE:GREGORIAN","X-WR-CALNAME:SF Marathon Training",...ev,"END:VCALENDAR"].join("\r\n");
+ const a=document.createElement("a");a.href=URL.createObjectURL(new Blob([txt],{type:"text/calendar"}));a.download=name;document.body.appendChild(a);a.click();a.remove();
+}
+document.getElementById("exCur").onclick=()=>dl_ics([cur],"sf_marathon_"+cur+"_phase.ics");
+document.getElementById("exAll").onclick=()=>dl_ics(["base","block"],"sf_marathon_full_plan.ics");
+
+// ---- Google Sheets / CSV export ----
+function sheetRows(phases){
+ const rows=[["Phase","Week","Week Starts","Date","Day","Workout","Target (pace / HR / RPE)","Miles","Long-Run Elevation Target (ft)","Cutback","Notes","Done"]];
+ phases.forEach(p=>{
+  const P=p==="base"?base:blk,n=p==="base"?22:16,st=p==="base"?new Date(2026,10,2):new Date(2027,3,5);
+  for(let i=0;i<n;i++){
+   const cb=p==="base"?base.cb.includes(i):[3,7,11].includes(i)?"Yes":"";
+   const cbv=p==="base"?(base.cb.includes(i)?"Yes":""):cb;
+   [[1,"Tue",P.tt[i],P.tue[i],""],[3,"Thu","Easy run, conversational (HR 131-157 bpm)",P.thu[i],""],[6,"Sun","Long run",P.sun[i],p==="base"?(base.el[i]?"":""):(blk.note[i]||"")]].forEach(([off,day,wo,mi,note])=>{
+    const d=new Date(st.getFullYear(),st.getMonth(),st.getDate()+7*i+off),s0=new Date(st.getFullYear(),st.getMonth(),st.getDate()+7*i);
+    const el=day==="Sun"?(p==="base"?(base.el[i]||""):(blk.el[i]||"")):"";
+    rows.push([p==="base"?"Base":"Marathon Block",(p==="base"?"B":"M")+(i+1),d.getFullYear()+"-"+String(s0.getMonth()+1).padStart(2,"0")+"-"+String(s0.getDate()).padStart(2,"0"),d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0"),day,(p==="block"&&i===15&&day==="Sun")?"RACE: SF Marathon":wo,(day==="Tue"?P.tg[i]:day==="Thu"?thuT:sunTarget(p,i)),mi,el,cbv,note,"FALSE"]);
+   });
+  }
+ });
+ return rows;
+}
+const sheetPhases=()=>document.getElementById("exAll")?["base","block"]:[cur];
+function toDelim(rows,d){return rows.map(r=>r.map(c=>{c=String(c);return d===","?(/[",\n]/.test(c)?'"'+c.replace(/"/g,'""')+'"':c):c.replace(/[\t\n]/g," ")}).join(d)).join("\n")}
+document.getElementById("exCopy").onclick=async()=>{
+ const t=toDelim(sheetRows(["base","block"]),"\t"),m=document.getElementById("exMsg");
+ try{await navigator.clipboard.writeText(t)}catch(e){const ta=document.createElement("textarea");ta.value=t;document.body.appendChild(ta);ta.select();document.execCommand("copy");ta.remove()}
+ m.textContent="Copied 114 workouts. Open a new Google Sheet, click cell A1 and paste (Ctrl/Cmd+V).";m.style.color="var(--grn)";
+};
+document.getElementById("exCsv").onclick=()=>{
+ const a=document.createElement("a");a.href=URL.createObjectURL(new Blob(["\ufeff"+toDelim(sheetRows(["base","block"]),",")],{type:"text/csv"}));a.download="sf_marathon_plan.csv";document.body.appendChild(a);a.click();a.remove();
+ const m=document.getElementById("exMsg");m.textContent="Downloaded. In Google Sheets use File > Import > Upload.";m.style.color="var(--grn)";
+};
+
+// ---- 4a. heat map ----
+(function(){
+ const day={};
+ A.forEach(a=>{const d=D(a),k=d.getTime();(day[k]=day[k]||{r:0,o:0,m:0,el:0}).m+=a[4];if(a[1]==="R")day[k].r+=a[2];else day[k].o++;day[k].el+=a[3]});
+ const cs=13,g=3,L=26,w=L+NW*(cs+g),h=7*(cs+g)+20;
+ let s=`<svg width="${w}" height="${h}" viewBox="0 0 ${w} ${h}" role="img" aria-label="Activity heat map">`;
+ ["M","","W","","F","","S"].forEach((l,i)=>s+=`<text x="2" y="${20+i*(cs+g)+11}" font-size="10" fill="#8fa0b8">${l}</text>`);
+ let lastM=-1;
+ for(let c=0;c<NW;c++){
+  const ws=new Date(2026,3,27+7*c);
+  if(ws.getMonth()!==lastM&&ws.getDate()<=7){lastM=ws.getMonth();s+=`<text x="${L+c*(cs+g)}" y="11" font-size="10" fill="#8fa0b8">${MON[lastM]}</text>`}
+  for(let r=0;r<7;r++){
+   const d=new Date(2026,3,27+7*c+r);if(d<new Date(2026,4,1)||d>new Date(2026,9,31))continue;
+   const v=day[d.getTime()];let col="#1b2535",t=fmt(d)+": rest";
+   if(v){if(v.r>0){col=v.r>=8?"#c5ffe8":v.r>=5?"#35d49a":v.r>=3?"#25a37a":"#1c6b54";t=`${fmt(d)}: <b>${v.r.toFixed(1)} mi</b> run`+(v.o?" + other":"")+`<br>${Math.round(v.m)} min total, ${Math.round(v.el)} ft`}else{col="#2f5d8c";t=`${fmt(d)}: walk/other, ${Math.round(v.m)} min`}}
+   s+=`<rect x="${L+c*(cs+g)}" y="${20+r*(cs+g)}" width="${cs}" height="${cs}" rx="3" fill="${col}" onmousemove="tp(event,'${t}')" onmouseleave="th()"/>`;
+  }
+ }
+ document.getElementById("heat").innerHTML=s+"</svg>";
+})();
+
+// ---- 4b. weekly miles + elevation ----
+(function(){
+ const W=620,H=250,m={l:34,r:40,t:12,b:34},iw=W-m.l-m.r,ih=H-m.t-m.b;
+ const mx=Math.max(...wk.map(w=>w.mi),1)*1.1,ex=Math.max(...wk.map(w=>w.el),1)*1.1,bw=iw/NW;
+ let s=`<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Weekly distance and elevation">`;
+ for(let i=0;i<=4;i++){const y=m.t+ih-i/4*ih;s+=`<line x1="${m.l}" x2="${W-m.r}" y1="${y}" y2="${y}" stroke="#243044"/><text x="${m.l-5}" y="${y+4}" font-size="10" fill="#8fa0b8" text-anchor="end">${Math.round(mx*i/4)}</text><text x="${W-m.r+5}" y="${y+4}" font-size="10" fill="#ffc857">${Math.round(ex*i/4)}</text>`}
+ let pts=[];
+ wk.forEach((w,i)=>{const bh=w.mi/mx*ih,x=m.l+i*bw;s+=`<rect x="${x+1.5}" y="${m.t+ih-bh}" width="${bw-3}" height="${bh}" rx="2" fill="#35d49a" onmousemove="tp(event,'Week of ${fmt(w.s)}<br><b>${w.mi.toFixed(1)} mi</b> &middot; ${Math.round(w.el)} ft &middot; ${w.n} runs')" onmouseleave="th()"/>`;pts.push(`${x+bw/2},${m.t+ih-w.el/ex*ih}`);if(i%4===0)s+=`<text x="${x+bw/2}" y="${H-16}" font-size="10" fill="#8fa0b8" text-anchor="middle">${fmt(w.s)}</text>`});
+ s+=`<polyline points="${pts.join(" ")}" fill="none" stroke="#ffc857" stroke-width="2"/>`;
+ document.getElementById("wk").innerHTML=s+"</svg>";
+})();
+
+// ---- 4c. scatter: distance vs elevation ----
+(function(){
+ const W=620,H=250,m={l:40,r:14,t:12,b:34},iw=W-m.l-m.r,ih=H-m.t-m.b;
+ const rr=runs.filter(a=>a[2]>=1),xm=14,ym=720;
+ const X=v=>m.l+v/xm*iw,Y=v=>m.t+ih-v/ym*ih;
+ let s=`<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Elevation vs distance scatter">`;
+ for(let v=0;v<=ym;v+=180)s+=`<line x1="${m.l}" x2="${W-m.r}" y1="${Y(v)}" y2="${Y(v)}" stroke="#243044"/><text x="${m.l-5}" y="${Y(v)+4}" font-size="10" fill="#8fa0b8" text-anchor="end">${v}</text>`;
+ for(let v=0;v<=14;v+=2)s+=`<text x="${X(v)}" y="${H-16}" font-size="10" fill="#8fa0b8" text-anchor="middle">${v}</text>`;
+ s+=`<text x="${m.l+iw/2}" y="${H-3}" font-size="10" fill="#8fa0b8" text-anchor="middle">distance (mi)</text><text x="10" y="${m.t+ih/2}" font-size="10" fill="#8fa0b8" transform="rotate(-90 10 ${m.t+ih/2})" text-anchor="middle">elevation gain (ft)</text>`;
+ s+=`<line x1="${X(0)}" y1="${Y(0)}" x2="${X(11)}" y2="${Y(11*65)}" stroke="#ff6a3d" stroke-width="2" stroke-dasharray="5 4"/>`;
+ rr.forEach(a=>{s+=`<circle cx="${X(a[2])}" cy="${Y(a[3])}" r="5" fill="#4ea1ff" fill-opacity=".7" stroke="#0b0f17" onmousemove="tp(event,'${fmt(D(a))}: <b>${a[2].toFixed(1)} mi</b>, ${a[3]} ft<br>${Math.round(a[3]/a[2])} ft/mi')" onmouseleave="th()"/>`});
+ document.getElementById("sc").innerHTML=s+"</svg>";
+})();
+</script>
+</body>
+</html>
